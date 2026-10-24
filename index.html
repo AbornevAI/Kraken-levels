@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Сетка Кракена</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: parameter strip on top, summary line, two linked charts, full ladder table down to zero */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --fg:#10202a; --muted:#5d717c; --line:#d6e0e4;
+  --sea:#0b7a86; --sea-soft:rgba(11,122,134,.14);
+  --gold:#b7791f; --gold-soft:rgba(183,121,31,.18);
+  --loss:#c2413b; --loss-soft:rgba(194,65,59,.14);
+  --row-hl:#e6f2f3;
+  --f-disp:"Unbounded",system-ui,sans-serif;
+  --f-ui:"Onest",system-ui,-apple-system,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b151b; --panel:#111f27; --fg:#e3edf0; --muted:#8aa0aa; --line:#223640;
+  --sea:#4cc6cf; --sea-soft:rgba(76,198,207,.16);
+  --gold:#e3a94b; --gold-soft:rgba(227,169,75,.2);
+  --loss:#ef6f67; --loss-soft:rgba(239,111,103,.16);
+  --row-hl:#173039; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b151b; --panel:#111f27; --fg:#e3edf0; --muted:#8aa0aa; --line:#223640;
+  --sea:#4cc6cf; --sea-soft:rgba(76,198,207,.16);
+  --gold:#e3a94b; --gold-soft:rgba(227,169,75,.2);
+  --loss:#ef6f67; --loss-soft:rgba(239,111,103,.16);
+  --row-hl:#173039; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(22px,4vw,30px);letter-spacing:-.01em;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:68ch}
+.params{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.params label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;min-width:0}
+.params input{font-family:var(--f-num);font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.params input:focus{outline:2px solid var(--sea);outline-offset:1px}
+.params small{text-transform:none;letter-spacing:0;font-size:11.5px}
+.warn{color:var(--loss);font-size:13px}
+.summary{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:baseline}
+.stat{display:flex;flex-direction:column;min-width:0}
+.stat span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat b{font-family:var(--f-num);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
+.stat b.loss{color:var(--loss)} .stat b.gold{color:var(--gold)} .stat b.sea{color:var(--sea)}
+.wrap>*{min-width:0}
+.charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.charts{grid-template-columns:minmax(0,1fr)}}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px 6px;min-width:0}
+.chart h2{font-size:14px;font-weight:600;margin:0 0 4px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.chart svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.readout{overflow-wrap:anywhere;font-family:var(--f-num);font-size:12.5px;color:var(--muted);min-height:1.5em;font-variant-numeric:tabular-nums}
+.tablebox{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:70vh}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13.5px}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--panel);font-family:var(--f-ui);font-weight:600;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;z-index:1}
+td{font-family:var(--f-num)}
+td:first-child,th:first-child{text-align:center;color:var(--muted)}
+tr.hl td{background:var(--row-hl)}
+td.loss{color:var(--loss)} td.gold{color:var(--gold)} td.sea{color:var(--sea)}
+.bar{display:inline-block;height:6px;border-radius:3px;background:var(--loss);vertical-align:middle;margin-left:8px;opacity:.75}
+.manual{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.manual h2{font-size:14px;font-weight:600;margin:0}
+.manual p{margin:0;font-size:12.5px;color:var(--muted);max-width:75ch}
+.ovlist{display:flex;flex-wrap:wrap;gap:10px}
+.ovrow{display:flex;flex-wrap:wrap;max-width:100%;min-width:0;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px}
+.ovrow input{font-family:var(--f-num);font-size:15px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.ovrow input:focus{outline:2px solid var(--sea);outline-offset:1px}
+.ovrow .n{width:84px;min-width:0}.ovrow .s{flex:1 1 90px;width:110px;min-width:0}
+.ovrow .hint{flex-basis:100%;font-size:11.5px;color:var(--muted);padding-left:2px}
+.ovrow .hint.bad{color:var(--loss)}
+.ovrow span{font-size:12px;color:var(--muted)}
+.ovrow button{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:4px}
+.ovrow button:hover,.ovrow button:focus-visible{color:var(--loss);outline:1px solid var(--line)}
+tr.ov td:first-child{color:var(--sea);font-weight:600}
+tr.ov td:nth-child(3){font-weight:600;text-decoration:underline;text-decoration-color:var(--sea);text-underline-offset:3px}
+.note{font-size:12.5px;color:var(--muted);max-width:90ch}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Сетка Кракена до нуля</h1>
+    <p>Лестница покупок от текущей цены вниз с постоянным шагом. Объём каждой следующей покупки растёт на коэффициент. Значения ниже стоят для примера, подставьте свои.</p>
+  </header>
+
+  <section class="params" aria-label="Параметры">
+    <label for="p0">Текущая цена (1-й шаг)<input id="p0" type="text" value="300" inputmode="decimal"></label>
+    <label for="dp">Шаг в абсолюте<input id="dp" type="text" value="3" inputmode="decimal"></label>
+    <label for="s1">Сумма 1-го входа<input id="s1" type="text" value="10000" inputmode="decimal"></label>
+    <label for="k">К-т прироста<input id="k" type="text" value="1.05" inputmode="decimal"><small>сумма шага n = сумма 1-го × к<sup>n−1</sup></small></label>
+    <label for="lot">Сумма лота<input id="lot" type="text" value="" placeholder="не задан" inputmode="decimal"><small>минимальный квант покупки; пусто = без лота</small></label>
+  </section>
+  <section class="manual" aria-label="Ручные шаги">
+    <h2>Ручные суммы на шагах</h2>
+    <p>Укажите цену уровня и новую целевую сумму. С этого шага прирост к идёт уже от новой суммы, всё ниже пересчитывается. После заполнения появляется следующее поле.</p>
+    <div class="ovlist" id="ovlist"></div>
+  </section>
+  <div id="warn" class="warn" hidden></div>
+
+  <section class="summary" id="summary"></section>
+
+  <section class="charts">
+    <div class="chart">
+      <h2>Деньги на каждом шаге</h2>
+      <div class="legend"><span><i style="background:var(--gold)"></i>вложено нарастающим</span><span><i style="background:var(--sea)"></i>стоимость позиции</span><span><i style="background:var(--loss)"></i>просадка</span></div>
+      <svg id="c1" viewBox="0 0 560 300" role="img" aria-label="Вложено и стоимость позиции по шагам"></svg>
+    </div>
+    <div class="chart">
+      <h2>Цена шага и средняя покупки</h2>
+      <div class="legend"><span><i style="background:var(--muted)"></i>цена шага</span><span><i style="background:var(--gold)"></i>средневзвешенная</span></div>
+      <svg id="c2" viewBox="0 0 560 300" role="img" aria-label="Цена шага и средневзвешенная цена"></svg>
+    </div>
+  </section>
+  <div class="readout" id="readout">Наведите или коснитесь графика, чтобы увидеть шаг</div>
+
+  <div class="tablebox"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+
+  <p class="note">Просадка = стоимость позиции по цене шага минус всё вложенное. Средневзвешенная = вложено / количество. Ручная сумма заменяет целевую на своём шаге, дальше прирост к идёт от неё; такие шаги отмечены в таблице. С лотом: к целевой сумме шага прибавляется остаток в тени с прошлого шага, покупается целое число лотов, остаток переходит на следующий шаг; в колонке «Покупка» фактическая сумма. Шаги идут, пока цена больше нуля.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const num=id=>parseFloat($(id).value.replace(/\s/g,'').replace(',','.'));
+const MAXN=5000;
+let rows=[],lotOn=false,hlIdx=-1,dec=2,ov=[{n:'',s:''}];
+const pn=v=>parseFloat(String(v).replace(/\s/g,'').replace(',','.'));
+let ovSeq=0;
+function addOvRow(o){
+  o.id=++ovSeq;const div=document.createElement('div');div.className='ovrow';div.dataset.id=o.id;
+  div.innerHTML=`<span>цена</span><input class="n" id="ovn${o.id}" data-f="n" type="text" inputmode="decimal" placeholder="уровень" aria-label="Цена уровня"><span>сумма</span><input class="s" id="ovs${o.id}" data-f="s" type="text" inputmode="decimal" placeholder="сумма" aria-label="Сумма шага"><button type="button" data-del="1" aria-label="Удалить">×</button><small class="hint"></small>`;
+  div.querySelector('.n').value=o.n;div.querySelector('.s').value=o.s;
+  $('ovlist').appendChild(div);
+}
+function renderOv(){$('ovlist').innerHTML='';ov.forEach(addOvRow)}
+function ensureBlank(){const last=ov[ov.length-1];if(!last||last.n!==''||last.s!==''){const o={n:'',s:''};ov.push(o);addOvRow(o);return true}return false}
+
+function fmt(x,d=0){return x.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function decOf(v){const s=String(v).replace(',','.');const i=s.indexOf('.');return i<0?0:Math.min(8,s.length-i-1)}
+function qtyFmt(q){return q>=100?fmt(q,2):fmt(q,6)}
+
+function calc(){
+  const P0=num('p0'),D=num('dp'),S1=num('s1'),K=num('k');
+  const lotRaw=$('lot').value.trim(); const L=num('lot');
+  lotOn=lotRaw!==''&&L>0;
+  const w=$('warn'); w.hidden=true;
+  if(!(P0>0&&D>0&&S1>0&&K>0)){w.textContent='Цена, шаг, сумма и коэффициент должны быть больше нуля.';w.hidden=false;rows=[];return}
+  dec=Math.max(decOf($('p0').value),decOf($('dp').value));
+  let n=Math.floor(P0/D-1e-9)+1; // levels with price > 0
+  if(n>MAXN){w.textContent=`Шагов до нуля ${fmt(n)}, показаны первые ${fmt(MAXN)}. Увеличьте шаг.`;w.hidden=false;n=MAXN}
+  const ovMap=new Map();
+  ov.forEach(o=>{const a=pn(o.n),b=pn(o.s);let h='',bad=false;
+    if(a>0){const idx=Math.round((P0-a)/D);
+      if(idx<0){h='выше текущей цены, не учтено';bad=true}
+      else if(idx>=n){h='ниже последнего уровня сетки, не учтено';bad=true}
+      else{const lp=+(P0-idx*D).toFixed(10);h=Math.abs(lp-a)<D*1e-6?`шаг № ${idx+1}`:`ближайший уровень ${fmt(lp,dec)}, шаг № ${idx+1}`;
+        if(b>0)ovMap.set(idx+1,b);else{h+=', введите сумму'}}}
+    const el=document.querySelector(`.ovrow[data-id="${o.id}"] .hint`);if(el){el.textContent=h;el.classList.toggle('bad',bad);el.hidden=!h}});
+  let base=S1,baseI=0;
+  rows=[];let inv=0,qty=0,lots=0,carry=0;
+  for(let i=0;i<n;i++){
+    const p=+(P0-i*D).toFixed(10); if(p<=0)break;
+    if(ovMap.has(i+1)){base=ovMap.get(i+1);baseI=i}
+    const target=base*Math.pow(K,i-baseI);
+    let buy,q,nl=0;
+    if(lotOn){const avail=target+carry;nl=Math.floor(avail/L+1e-9);buy=nl*L;carry=avail-buy;q=buy/p;lots+=nl}
+    else{buy=target;q=target/p}
+    inv+=buy;qty+=q;
+    const val=qty*p,dd=val-inv;
+    const avg=qty>0?inv/qty:0;
+    rows.push({ov:ovMap.has(i+1),carry,i,p,fall:(p/P0-1)*100,target,buy,nl,lots,inv,qty,avg,val,dd,ddp:inv>0?dd/inv*100:0,back:qty>0?(avg/p-1)*100:0});
+  }
+}
+
+function summary(){
+  const s=$('summary');if(!rows.length){s.innerHTML='';return}
+  const last=rows[rows.length-1];
+  const items=[
+    ['Шагов до нуля',fmt(rows.length),''],
+    ['Вложено всего',fmt(last.inv),'gold'],
+    ['Последний шаг',fmt(last.p,dec),''],
+    ['Средняя на дне',fmt(last.avg,dec),'gold'],
+    ['Просадка на дне',fmt(last.dd)+' ('+fmt(last.ddp,1)+'%)','loss'],
+  ];
+  if(lotOn){items.splice(2,0,['Лотов всего',fmt(last.lots),'sea']);items.push(['Остаток в тени',fmt(last.carry),''])}
+  s.innerHTML=items.map(([a,b,c])=>`<div class="stat"><span>${a}</span><b class="${c}">${b}</b></div>`).join('');
+}
+
+function table(){
+  const th=['№','Цена','Покупка','Вложено Σ','От старта','Просадка','Просадка %'].concat(lotOn?['Лотов','Лотов Σ','В тени']:['Кол-во']).concat(['Кол-во Σ','Средняя','Стоимость','Отскок до средней']);
+  $('tbl').tHead.innerHTML='<tr>'+th.map(t=>`<th>${t}</th>`).join('')+'</tr>';
+  const html=rows.map(r=>{
+    const w=Math.min(60,Math.abs(r.ddp)*0.6);
+    const cells=[r.i+1,fmt(r.p,dec),fmt(r.buy),fmt(r.inv),fmt(r.fall,1)+'%',fmt(r.dd),fmt(r.ddp,1)+'%<span class="bar" style="width:'+w+'px"></span>']
+      .concat(lotOn?[fmt(r.nl),fmt(r.lots),fmt(r.carry)]:[qtyFmt(r.buy/r.p)])
+      .map((c,j)=>`<td${(j===2||j===3)?' class="gold"':(j===5||j===6)?' class="loss"':''}>${c}</td>`).join('')
+      +`<td>${qtyFmt(r.qty)}</td><td class="gold">${fmt(r.avg,dec)}</td><td class="sea">${fmt(r.val)}</td>`
+      +`<td>+${fmt(r.back,1)}%</td>`;
+    return `<tr data-i="${r.i}"${r.ov?' class="ov"':''}>${cells}</tr>`}).join('');
+  $('tbl').tBodies[0].innerHTML=html;
+}
+
+const W=560,H=300,M={l:62,r:12,t:12,b:34};
+function niceTicks(min,max,n=5){const span=max-min||1;const step0=span/n;const mag=Math.pow(10,Math.floor(Math.log10(step0)));const st=[1,2,2.5,5,10].map(x=>x*mag).find(x=>x>=step0);const out=[];for(let v=Math.ceil(min/st)*st;v<=max+1e-9;v+=st)out.push(+v.toFixed(10));return out}
+function short(v){const a=Math.abs(v);if(a>=1e9)return fmt(v/1e9,1)+' млрд';if(a>=1e6)return fmt(v/1e6,1)+' млн';if(a>=1e3)return fmt(v/1e3,0)+' тыс';return fmt(v,a<10&&a>0?1:0)}
+
+function axes(svg,ymin,ymax,xs){
+  const ys=v=>M.t+(H-M.t-M.b)*(1-(v-ymin)/(ymax-ymin||1));
+  let g='';
+  niceTicks(ymin,ymax).forEach(t=>{const y=ys(t);g+=`<line x1="${M.l}" x2="${W-M.r}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${M.l-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${short(t)}</text>`});
+  const n=rows.length,cnt=Math.min(6,n);
+  for(let k=0;k<cnt;k++){const i=Math.round(k*(n-1)/Math.max(1,cnt-1));g+=`<text x="${xs(i)}" y="${H-M.b+16}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${fmt(rows[i].p,dec)}</text>`}
+  g+=`<text x="${(M.l+W-M.r)/2}" y="${H-4}" text-anchor="middle" font-size="10.5" fill="var(--muted)">цена шага →</text>`;
+  return {g,ys};
+}
+
+function path(pts){return pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('')}
+
+function charts(){
+  const c1=$('c1'),c2=$('c2');
+  if(!rows.length){c1.innerHTML=c2.innerHTML='';return}
+  const n=rows.length;
+  const xs=i=>M.l+(W-M.l-M.r)*(n===1?0.5:i/(n-1));
+  // chart 1
+  const ymax=Math.max(...rows.map(r=>r.inv))*1.05;
+  let a=axes(c1,0,ymax,xs),ys=a.ys;
+  const inv=rows.map(r=>[xs(r.i),ys(r.inv)]),val=rows.map(r=>[xs(r.i),ys(r.val)]);
+  const gap=path(inv)+path(val.slice().reverse()).replace(/^M/,'L')+'Z';
+  c1.innerHTML=a.g+`<path d="${gap}" fill="var(--loss-soft)" stroke="none"/>`
+    +`<path d="${path(inv)}" fill="none" stroke="var(--gold)" stroke-width="2.2"/>`
+    +`<path d="${path(val)}" fill="none" stroke="var(--sea)" stroke-width="2.2"/>`
+    +`<g id="h1"></g><rect x="${M.l}" y="${M.t}" width="${W-M.l-M.r}" height="${H-M.t-M.b}" fill="transparent" data-c="1"/>`;
+  // chart 2
+  const p0=rows[0].p;let b=axes(c2,0,p0*1.03,xs),ys2=b.ys;
+  const pr=rows.map(r=>[xs(r.i),ys2(r.p)]),av=rows.map(r=>[xs(r.i),ys2(r.avg)]);
+  const between=path(av)+path(pr.slice().reverse()).replace(/^M/,'L')+'Z';
+  c2.innerHTML=b.g+`<path d="${between}" fill="var(--gold-soft)" stroke="none"/>`
+    +`<path d="${path(pr)}" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="5 4"/>`
+    +`<path d="${path(av)}" fill="none" stroke="var(--gold)" stroke-width="2.2"/>`
+    +`<g id="h2"></g><rect x="${M.l}" y="${M.t}" width="${W-M.l-M.r}" height="${H-M.t-M.b}" fill="transparent" data-c="2"/>`;
+  [c1,c2].forEach(svg=>{
+    const r=svg.querySelector('rect[data-c]');
+    const move=e=>{const pt=svg.createSVGPoint();const t=e.touches?e.touches[0]:e;pt.x=t.clientX;pt.y=t.clientY;const loc=pt.matrixTransform(svg.getScreenCTM().inverse());let i=Math.round((loc.x-M.l)/(W-M.l-M.r)*(n-1));i=Math.max(0,Math.min(n-1,i));highlight(i,false)};
+    r.addEventListener('mousemove',move);r.addEventListener('touchstart',move,{passive:true});r.addEventListener('touchmove',move,{passive:true});
+  });
+  charts.xs=xs;charts.ys=ys;charts.ys2=ys2;
+  if(hlIdx>=n)hlIdx=-1; if(hlIdx>=0)highlight(hlIdx,false);
+}
+
+function highlight(i,scroll){
+  hlIdx=i;const r=rows[i];if(!r)return;
+  const x=charts.xs(i);
+  $('h1').innerHTML=`<line x1="${x}" x2="${x}" y1="${M.t}" y2="${H-M.b}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="${x}" cy="${charts.ys(r.inv)}" r="4" fill="var(--gold)"/><circle cx="${x}" cy="${charts.ys(r.val)}" r="4" fill="var(--sea)"/>`;
+  $('h2').innerHTML=`<line x1="${x}" x2="${x}" y1="${M.t}" y2="${H-M.b}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="${x}" cy="${charts.ys2(r.p)}" r="4" fill="var(--muted)"/><circle cx="${x}" cy="${charts.ys2(r.avg)}" r="4" fill="var(--gold)"/>`;
+  $('readout').textContent=`Шаг ${i+1} · цена ${fmt(r.p,dec)} (${fmt(r.fall,1)}%) · вложено ${fmt(r.inv)} · средняя ${fmt(r.avg,dec)} · просадка ${fmt(r.dd)} (${fmt(r.ddp,1)}%)`+(lotOn?` · лотов ${fmt(r.lots)}`:'');
+  document.querySelectorAll('#tbl tr.hl').forEach(t=>t.classList.remove('hl'));
+  const tr=document.querySelector(`#tbl tr[data-i="${i}"]`);if(tr){tr.classList.add('hl');
+    const box=document.querySelector('.tablebox');const top=tr.offsetTop-box.clientHeight/2;box.scrollTop=Math.max(0,top)}
+}
+
+function run(){calc();summary();table();charts();
+  try{localStorage.setItem('kraken-grid-v2',JSON.stringify(['p0','dp','s1','k','lot'].map(id=>$(id).value)));localStorage.setItem('kraken-grid-ov2',JSON.stringify(ov.map(o=>({n:o.n,s:o.s}))))}catch(e){}}
+
+try{const s=JSON.parse(localStorage.getItem('kraken-grid-v2')||'null');if(Array.isArray(s))['p0','dp','s1','k','lot'].forEach((id,j)=>{if(s[j]!=null)$(id).value=s[j]})}catch(e){}
+try{const o=JSON.parse(localStorage.getItem('kraken-grid-ov2')||'null');if(Array.isArray(o)&&o.length)ov=o.map(x=>({n:String(x.n??''),s:String(x.s??'')}))}catch(e){}
+renderOv();ensureBlank();
+$('ovlist').addEventListener('input',e=>{const t=e.target;if(!t.dataset.f)return;const id=+t.closest('.ovrow').dataset.id;const o=ov.find(x=>x.id===id);if(!o)return;
+  o[t.dataset.f]=t.value;if(o.n!==''&&o.s!=='')ensureBlank();run()});
+$('ovlist').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const row=b.closest('.ovrow');const id=+row.dataset.id;
+  if(ov.length===1&&ov[0].n===''&&ov[0].s==='')return;ov=ov.filter(x=>x.id!==id);row.remove();ensureBlank();run()});
+['p0','dp','s1','k','lot'].forEach(id=>$(id).addEventListener('input',run));
+$('tbl').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr)highlight(+tr.dataset.i,false)});
+run();
+</script>
+
+</body>
+</html>
