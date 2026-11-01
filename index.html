@@ -14,7 +14,7 @@
   --sea:#0b7a86; --sea-soft:rgba(11,122,134,.14);
   --gold:#b7791f; --gold-soft:rgba(183,121,31,.18);
   --loss:#c2413b; --loss-soft:rgba(194,65,59,.14);
-  --row-hl:#e6f2f3;
+  --row-hl:#e6f2f3; --gain:#2f7d4f;
   --f-disp:"Unbounded",system-ui,sans-serif;
   --f-ui:"Onest",system-ui,-apple-system,sans-serif;
   --f-num:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -24,13 +24,13 @@
   --sea:#4cc6cf; --sea-soft:rgba(76,198,207,.16);
   --gold:#e3a94b; --gold-soft:rgba(227,169,75,.2);
   --loss:#ef6f67; --loss-soft:rgba(239,111,103,.16);
-  --row-hl:#173039; color-scheme:dark}}
+  --row-hl:#173039; --gain:#5cc98a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0b151b; --panel:#111f27; --fg:#e3edf0; --muted:#8aa0aa; --line:#223640;
   --sea:#4cc6cf; --sea-soft:rgba(76,198,207,.16);
   --gold:#e3a94b; --gold-soft:rgba(227,169,75,.2);
   --loss:#ef6f67; --loss-soft:rgba(239,111,103,.16);
-  --row-hl:#173039; color-scheme:dark}
+  --row-hl:#173039; --gain:#5cc98a; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.45;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
@@ -64,7 +64,7 @@ th{position:sticky;top:0;background:var(--panel);font-family:var(--f-ui);font-we
 td{font-family:var(--f-num)}
 td:first-child,th:first-child{text-align:center;color:var(--muted)}
 tr.hl td{background:var(--row-hl)}
-td.loss{color:var(--loss)} td.gold{color:var(--gold)} td.sea{color:var(--sea)}
+td.gain{color:var(--gain)} .stat b.gain{color:var(--gain)} td.loss{color:var(--loss)} td.gold{color:var(--gold)} td.sea{color:var(--sea)}
 .bar{display:inline-block;height:6px;border-radius:3px;background:var(--loss);vertical-align:middle;margin-left:8px;opacity:.75}
 .manual{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .manual h2{font-size:14px;font-weight:600;margin:0}
@@ -98,6 +98,8 @@ tr.ov td:nth-child(3){font-weight:600;text-decoration:underline;text-decoration-
     <label for="s1">Сумма 1-го входа<input id="s1" type="text" value="10000" inputmode="decimal"></label>
     <label for="k">К-т прироста<input id="k" type="text" value="1.05" inputmode="decimal"><small>сумма шага n = сумма 1-го × к<sup>n−1</sup></small></label>
     <label for="lot">Сумма лота<input id="lot" type="text" value="" placeholder="не задан" inputmode="decimal"><small>минимальный квант покупки; пусто = без лота</small></label>
+    <label for="invp">Инвест-доля, %<input id="invp" type="text" value="30" inputmode="decimal"><small>часть каждой покупки, продаётся на 1-м уровне</small></label>
+    <label for="sellp">Продажа за шаг, %<input id="sellp" type="text" value="10" inputmode="decimal"><small>от торговой части, на каждом шаге вверх от своей покупки</small></label>
   </section>
   <section class="manual" aria-label="Ручные шаги">
     <h2>Ручные суммы на шагах</h2>
@@ -111,7 +113,7 @@ tr.ov td:nth-child(3){font-weight:600;text-decoration:underline;text-decoration-
   <section class="charts">
     <div class="chart">
       <h2>Деньги на каждом шаге</h2>
-      <div class="legend"><span><i style="background:var(--gold)"></i>вложено нарастающим</span><span><i style="background:var(--sea)"></i>стоимость позиции</span><span><i style="background:var(--loss)"></i>просадка</span></div>
+      <div class="legend"><span><i style="background:var(--gold)"></i>вложено нарастающим</span><span><i style="background:var(--sea)"></i>стоимость позиции</span><span><i style="background:var(--loss)"></i>просадка</span><span><i style="background:var(--gain)"></i>доход при развороте</span></div>
       <svg id="c1" viewBox="0 0 560 300" role="img" aria-label="Вложено и стоимость позиции по шагам"></svg>
     </div>
     <div class="chart">
@@ -124,7 +126,7 @@ tr.ov td:nth-child(3){font-weight:600;text-decoration:underline;text-decoration-
 
   <div class="tablebox"><table id="tbl"><thead></thead><tbody></tbody></table></div>
 
-  <p class="note">Просадка = стоимость позиции по цене шага минус всё вложенное. Средневзвешенная = вложено / количество. Ручная сумма заменяет целевую на своём шаге, дальше прирост к идёт от неё; такие шаги отмечены в таблице. С лотом: к целевой сумме шага прибавляется остаток в тени с прошлого шага, покупается целое число лотов, остаток переходит на следующий шаг; в колонке «Покупка» фактическая сумма. Шаги идут, пока цена больше нуля.</p>
+  <p class="note">Просадка = стоимость позиции по цене шага минус всё вложенное. Средневзвешенная = вложено / количество. Ручная сумма заменяет целевую на своём шаге, дальше прирост к идёт от неё; такие шаги отмечены в таблице. С лотом: к целевой сумме шага прибавляется остаток в тени с прошлого шага, покупается целое число лотов, остаток переходит на следующий шаг; в колонке «Покупка» фактическая сумма. Шаги идут, пока цена больше нуля. Доход при развороте: цена разворачивается на этом шаге и возвращается к 1-му уровню. Каждая покупка считается отдельно: инвест-доля ждёт 1-го уровня, от торговой части на каждом шаге выше цены покупки продаётся заданный процент (с лотом целыми лотами, дробь копится в тени до целого лота), всё непроданное закрывается на 1-м уровне. «Доход этой покупки» показывает вклад каждой строки, «Доход при развороте» их сумму от 1-го шага до текущего.</p>
 </div>
 
 <script>
@@ -178,6 +180,28 @@ function calc(){
     const avg=qty>0?inv/qty:0;
     rows.push({ov:ovMap.has(i+1),carry,i,p,fall:(p/P0-1)*100,target,buy,nl,lots,inv,qty,avg,val,dd,ddp:inv>0?dd/inv*100:0,back:qty>0?(avg/p-1)*100:0});
   }
+  // Return scenario: price turns up from a step and goes back to level 1.
+  // Each purchase is its own mini-portfolio and does not depend on how deep the bottom is.
+  let NI=num('invp');NI=isFinite(NI)?Math.min(100,Math.max(0,NI))/100:0;
+  let MS=num('sellp');MS=isFinite(MS)&&MS>0?Math.min(100,MS)/100:0;
+  let cum=0;
+  rows.forEach(r=>{
+    const units=lotOn?r.nl:r.buy/r.p, uq=lotOn?L/r.p:1;
+    const trade=units*(1-NI), per=trade*MS;
+    let sold=0,acc=0,proc=0;
+    if(r.i===0){proc=units*uq*r.p}
+    for(let k=1;k<=r.i;k++){
+      const price=+(P0-(r.i-k)*D).toFixed(10);
+      if(k===r.i){proc+=(units-sold)*uq*price;break}
+      if(per<=0||trade-sold<=1e-12)continue;
+      acc+=per;
+      let x=lotOn?Math.floor(acc+1e-9):acc;
+      const room=lotOn?Math.floor(trade-sold+1e-9):trade-sold;
+      x=Math.min(x,room);if(x<=0)continue;
+      acc-=x;sold+=x;proc+=x*uq*price;
+    }
+    r.mp=proc-r.buy;cum+=r.mp;r.pnl=cum;r.pnlp=r.inv>0?cum/r.inv*100:0;
+  });
 }
 
 function summary(){
@@ -189,21 +213,22 @@ function summary(){
     ['Последний шаг',fmt(last.p,dec),''],
     ['Средняя на дне',fmt(last.avg,dec),'gold'],
     ['Просадка на дне',fmt(last.dd)+' ('+fmt(last.ddp,1)+'%)','loss'],
+    ['Доход при развороте с дна',fmt(last.pnl)+' ('+fmt(last.pnlp,1)+'%)','gain'],
   ];
   if(lotOn){items.splice(2,0,['Лотов всего',fmt(last.lots),'sea']);items.push(['Остаток в тени',fmt(last.carry),''])}
   s.innerHTML=items.map(([a,b,c])=>`<div class="stat"><span>${a}</span><b class="${c}">${b}</b></div>`).join('');
 }
 
 function table(){
-  const th=['№','Цена','Покупка','Вложено Σ','От старта','Просадка','Просадка %'].concat(lotOn?['Лотов','Лотов Σ','В тени']:['Кол-во']).concat(['Кол-во Σ','Средняя','Стоимость','Отскок до средней']);
+  const th=['№','Цена','Покупка','Вложено Σ','От старта','Просадка','Просадка %','Доход при развороте','Доход %'].concat(lotOn?['Лотов','Лотов Σ','В тени']:['Кол-во']).concat(['Кол-во Σ','Средняя','Стоимость','Отскок до средней','Доход этой покупки']);
   $('tbl').tHead.innerHTML='<tr>'+th.map(t=>`<th>${t}</th>`).join('')+'</tr>';
   const html=rows.map(r=>{
     const w=Math.min(60,Math.abs(r.ddp)*0.6);
-    const cells=[r.i+1,fmt(r.p,dec),fmt(r.buy),fmt(r.inv),fmt(r.fall,1)+'%',fmt(r.dd),fmt(r.ddp,1)+'%<span class="bar" style="width:'+w+'px"></span>']
+    const cells=[r.i+1,fmt(r.p,dec),fmt(r.buy),fmt(r.inv),fmt(r.fall,1)+'%',fmt(r.dd),fmt(r.ddp,1)+'%<span class="bar" style="width:'+w+'px"></span>',fmt(r.pnl),fmt(r.pnlp,1)+'%']
       .concat(lotOn?[fmt(r.nl),fmt(r.lots),fmt(r.carry)]:[qtyFmt(r.buy/r.p)])
-      .map((c,j)=>`<td${(j===2||j===3)?' class="gold"':(j===5||j===6)?' class="loss"':''}>${c}</td>`).join('')
+      .map((c,j)=>`<td${(j===2||j===3)?' class="gold"':(j===5||j===6)?' class="loss"':(j===7||j===8)?' class="gain"':''}>${c}</td>`).join('')
       +`<td>${qtyFmt(r.qty)}</td><td class="gold">${fmt(r.avg,dec)}</td><td class="sea">${fmt(r.val)}</td>`
-      +`<td>+${fmt(r.back,1)}%</td>`;
+      +`<td>+${fmt(r.back,1)}%</td><td class="gain">${fmt(r.mp)}</td>`;
     return `<tr data-i="${r.i}"${r.ov?' class="ov"':''}>${cells}</tr>`}).join('');
   $('tbl').tBodies[0].innerHTML=html;
 }
@@ -230,13 +255,14 @@ function charts(){
   const n=rows.length;
   const xs=i=>M.l+(W-M.l-M.r)*(n===1?0.5:i/(n-1));
   // chart 1
-  const ymax=Math.max(...rows.map(r=>r.inv))*1.05;
+  const ymax=Math.max(...rows.map(r=>Math.max(r.inv,r.pnl)))*1.05;
   let a=axes(c1,0,ymax,xs),ys=a.ys;
   const inv=rows.map(r=>[xs(r.i),ys(r.inv)]),val=rows.map(r=>[xs(r.i),ys(r.val)]);
   const gap=path(inv)+path(val.slice().reverse()).replace(/^M/,'L')+'Z';
   c1.innerHTML=a.g+`<path d="${gap}" fill="var(--loss-soft)" stroke="none"/>`
     +`<path d="${path(inv)}" fill="none" stroke="var(--gold)" stroke-width="2.2"/>`
     +`<path d="${path(val)}" fill="none" stroke="var(--sea)" stroke-width="2.2"/>`
+    +`<path d="${path(rows.map(r=>[xs(r.i),ys(Math.max(0,r.pnl))]))}" fill="none" stroke="var(--gain)" stroke-width="2.2"/>`
     +`<g id="h1"></g><rect x="${M.l}" y="${M.t}" width="${W-M.l-M.r}" height="${H-M.t-M.b}" fill="transparent" data-c="1"/>`;
   // chart 2
   const p0=rows[0].p;let b=axes(c2,0,p0*1.03,xs),ys2=b.ys;
@@ -258,25 +284,25 @@ function charts(){
 function highlight(i,scroll){
   hlIdx=i;const r=rows[i];if(!r)return;
   const x=charts.xs(i);
-  $('h1').innerHTML=`<line x1="${x}" x2="${x}" y1="${M.t}" y2="${H-M.b}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="${x}" cy="${charts.ys(r.inv)}" r="4" fill="var(--gold)"/><circle cx="${x}" cy="${charts.ys(r.val)}" r="4" fill="var(--sea)"/>`;
+  $('h1').innerHTML=`<line x1="${x}" x2="${x}" y1="${M.t}" y2="${H-M.b}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="${x}" cy="${charts.ys(r.inv)}" r="4" fill="var(--gold)"/><circle cx="${x}" cy="${charts.ys(r.val)}" r="4" fill="var(--sea)"/><circle cx="${x}" cy="${charts.ys(Math.max(0,r.pnl))}" r="4" fill="var(--gain)"/>`;
   $('h2').innerHTML=`<line x1="${x}" x2="${x}" y1="${M.t}" y2="${H-M.b}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="${x}" cy="${charts.ys2(r.p)}" r="4" fill="var(--muted)"/><circle cx="${x}" cy="${charts.ys2(r.avg)}" r="4" fill="var(--gold)"/>`;
-  $('readout').textContent=`Шаг ${i+1} · цена ${fmt(r.p,dec)} (${fmt(r.fall,1)}%) · вложено ${fmt(r.inv)} · средняя ${fmt(r.avg,dec)} · просадка ${fmt(r.dd)} (${fmt(r.ddp,1)}%)`+(lotOn?` · лотов ${fmt(r.lots)}`:'');
+  $('readout').textContent=`Шаг ${i+1} · цена ${fmt(r.p,dec)} (${fmt(r.fall,1)}%) · вложено ${fmt(r.inv)} · средняя ${fmt(r.avg,dec)} · просадка ${fmt(r.dd)} (${fmt(r.ddp,1)}%) · доход при развороте ${fmt(r.pnl)} (${fmt(r.pnlp,1)}%)`+(lotOn?` · лотов ${fmt(r.lots)}`:'');
   document.querySelectorAll('#tbl tr.hl').forEach(t=>t.classList.remove('hl'));
   const tr=document.querySelector(`#tbl tr[data-i="${i}"]`);if(tr){tr.classList.add('hl');
     const box=document.querySelector('.tablebox');const top=tr.offsetTop-box.clientHeight/2;box.scrollTop=Math.max(0,top)}
 }
 
 function run(){calc();summary();table();charts();
-  try{localStorage.setItem('kraken-grid-v2',JSON.stringify(['p0','dp','s1','k','lot'].map(id=>$(id).value)));localStorage.setItem('kraken-grid-ov2',JSON.stringify(ov.map(o=>({n:o.n,s:o.s}))))}catch(e){}}
+  try{localStorage.setItem('kraken-grid-v2',JSON.stringify(['p0','dp','s1','k','lot','invp','sellp'].map(id=>$(id).value)));localStorage.setItem('kraken-grid-ov2',JSON.stringify(ov.map(o=>({n:o.n,s:o.s}))))}catch(e){}}
 
-try{const s=JSON.parse(localStorage.getItem('kraken-grid-v2')||'null');if(Array.isArray(s))['p0','dp','s1','k','lot'].forEach((id,j)=>{if(s[j]!=null)$(id).value=s[j]})}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('kraken-grid-v2')||'null');if(Array.isArray(s))['p0','dp','s1','k','lot','invp','sellp'].forEach((id,j)=>{if(s[j]!=null)$(id).value=s[j]})}catch(e){}
 try{const o=JSON.parse(localStorage.getItem('kraken-grid-ov2')||'null');if(Array.isArray(o)&&o.length)ov=o.map(x=>({n:String(x.n??''),s:String(x.s??'')}))}catch(e){}
 renderOv();ensureBlank();
 $('ovlist').addEventListener('input',e=>{const t=e.target;if(!t.dataset.f)return;const id=+t.closest('.ovrow').dataset.id;const o=ov.find(x=>x.id===id);if(!o)return;
   o[t.dataset.f]=t.value;if(o.n!==''&&o.s!=='')ensureBlank();run()});
 $('ovlist').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const row=b.closest('.ovrow');const id=+row.dataset.id;
   if(ov.length===1&&ov[0].n===''&&ov[0].s==='')return;ov=ov.filter(x=>x.id!==id);row.remove();ensureBlank();run()});
-['p0','dp','s1','k','lot'].forEach(id=>$(id).addEventListener('input',run));
+['p0','dp','s1','k','lot','invp','sellp'].forEach(id=>$(id).addEventListener('input',run));
 $('tbl').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr)highlight(+tr.dataset.i,false)});
 run();
 </script>
